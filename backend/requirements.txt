@@ -2,5 +2,5 @@ fastapi
 uvicorn
 python-multipart
 anthropic
-opencv-python
+opencv-python-headless
 python-dotenv
