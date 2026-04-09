@@ -181,7 +181,7 @@ function ExerciseCard({ exercise }) {
       const formData = new FormData()
       formData.append('file', file)
       formData.append('exercise', exercise.exercise)
-      const res = await fetch('http://localhost:8000/form-feedback', {
+      const res = await fetch('https://workout-trainer-production.up.railway.app/form-feedback', {
         method: 'POST',
         body: formData,
       })
@@ -262,7 +262,7 @@ function EquipmentDetector({ onUseEquipment }) {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      const res = await fetch('http://localhost:8000/detect-equipment', {
+      const res = await fetch('https://workout-trainer-production.up.railway.app/detect-equipment', {
         method: 'POST',
         body: formData,
       })
@@ -322,7 +322,7 @@ function WorkoutScreen({ profile, onBack, onEditProfile, onUpdateProfile }) {
     setError('')
     setExercises([])
     try {
-      const res = await fetch('http://localhost:8000/generate-workout', {
+      const res = await fetch('https://workout-trainer-production.up.railway.app/generate-workout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(profileToUse),
