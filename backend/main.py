@@ -1,13 +1,13 @@
 import os
 import json
 import base64
-import tempfile
+import io
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
 import anthropic
-import cv2
+from PIL import Image
 
 load_dotenv()
 
@@ -120,12 +120,10 @@ async def detect_equipment(file: UploadFile = File(...)):
     )
 
     raw = strip_code_fences(message.content[0].text)
-    print(f"[detect-equipment] Raw AI response: {repr(raw)}")
 
     try:
         equipment = json.loads(raw)
-    except json.JSONDecodeError as e:
-        print(f"[detect-equipment] JSON parse error: {e}")
+    except json.JSONDecodeError:
         raise HTTPException(status_code=500, detail=f"AI returned invalid JSON: {repr(raw)}")
 
     return {"equipment": equipment}
@@ -133,26 +131,15 @@ async def detect_equipment(file: UploadFile = File(...)):
 
 @app.post("/form-feedback")
 async def form_feedback(file: UploadFile = File(...), exercise: str = Form(...)):
-    video_data = await file.read()
-
-    # Write video to a temp file so OpenCV can open it
-    suffix = os.path.splitext(file.filename or "video.mp4")[1] or ".mp4"
-    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
-        tmp.write(video_data)
-        tmp_path = tmp.name
+    image_data = await file.read()
 
     try:
-        cap = cv2.VideoCapture(tmp_path)
-        success, frame = cap.read()
-        cap.release()
-    finally:
-        os.unlink(tmp_path)
-
-    if not success or frame is None:
-        raise HTTPException(status_code=400, detail="Could not read video file. Try a different format (MP4 works best).")
-
-    _, buffer = cv2.imencode(".jpg", frame)
-    base64_image = base64.b64encode(buffer).decode("utf-8")
+        image = Image.open(io.BytesIO(image_data))
+        img_byte_arr = io.BytesIO()
+        image.convert("RGB").save(img_byte_arr, format="JPEG")
+        base64_image = base64.b64encode(img_byte_arr.getvalue()).decode("utf-8")
+    except Exception:
+        raise HTTPException(status_code=400, detail="Could not read file. Please upload a JPG or PNG image.")
 
     message = client.messages.create(
         model="claude-sonnet-4-6",
